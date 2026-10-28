@@ -39,7 +39,6 @@ um PR em rascunho com o checklist abaixo.
   - `PUT /eventos/{id}` → 200, `DELETE /eventos/{id}` → **204**;
   - `POST /eventos/{id}/inscricoes` → 200 com o evento atualizado (sem verbo na URI, Req 01).
 - [ ] `@Valid` no parâmetro `EventoRequest` do `POST` e do `PUT` (as restrições em si são do Wellington).
-- [ ] Chamar `EventoMetricas.registrarInscricao()` do Romulo quando a inscrição der certo (Req 10).
 - [ ] Testes `@QuarkusTest` com RestAssured: CRUD completo, sequência PUT → GET mostrando o dado
       alterado (Req 13) e inscrição recusada em evento lotado.
 
@@ -63,7 +62,8 @@ um PR em rascunho com o checklist abaixo.
       `docs/evidencias.md` quando cada uma fica DOWN.
 - [ ] `platform/metrics/EventoMetricas` (`@ApplicationScoped`) com um `Counter` do Micrometer
       (`eventos.inscricoes`, aparece como `eventos_inscricoes_total` em `/q/metrics`) e o método
-      público `registrarInscricao()` que o Felipe chama (Req 10).
+      público `registrarInscricao()`. Depois do merge do Felipe, injetar `EventoMetricas` no
+      `EventoService` e chamar `registrarInscricao()` no fim da inscrição (Req 10).
 - [ ] Testes: fallback com o serviço externo fora do ar e a métrica variando em `/q/metrics`.
 
 ## Wellington — Validação, erros, Lombok e entregáveis
@@ -91,8 +91,7 @@ um PR em rascunho com o checklist abaixo.
 | De → Para | Contrato |
 |-----------|----------|
 | Felipe → Wellington | O service lança `EventoNaoEncontradoException` e `RegraDeNegocioException(codigo, mensagem)` (já na base); o resource usa `@Valid`. |
-| Felipe → Romulo | O service chama `EventoMetricas.registrarInscricao()` depois de inscrever. |
-| Romulo → Felipe | `GET /eventos/{id}/endereco` busca o evento por `EventoService.buscar(id)`. |
+| Felipe → Romulo | `EventoService.buscar(id)` (usado no `GET /eventos/{id}/endereco`) e `EventoService.inscrever(id)` (onde o Romulo pluga a métrica). Até o merge do Felipe, o Romulo trabalha no client, na resiliência, no health e na config, que não dependem disso. |
 
 Se um contrato precisar mudar, avise no grupo e comente no PR do colega antes.
 
