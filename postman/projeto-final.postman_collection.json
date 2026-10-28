@@ -1,0 +1,39 @@
+{
+    "info": {
+        "name": "Eventos API — Projeto final",
+        "description": "Demonstrações dos requisitos 01 a 16. Suba o mock-enderecos (8081) e a API (8080) antes. Esqueleto inicial: o Wellington completa com todos os cenários.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        { "key": "baseUrl", "value": "http://localhost:8080" },
+        { "key": "mockUrl", "value": "http://localhost:8081" }
+    ],
+    "item": [
+        {
+            "name": "01-02 CRUD de eventos",
+            "item": [
+                { "name": "Listar eventos", "request": { "method": "GET", "url": "{{baseUrl}}/eventos" } },
+                { "name": "Buscar evento 1", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/1" } }
+            ]
+        },
+        {
+            "name": "06 Serviço externo (mock)",
+            "item": [
+                { "name": "Mock: endereço por CEP", "request": { "method": "GET", "url": "{{mockUrl}}/enderecos/01310100" } }
+            ]
+        },
+        {
+            "name": "08 Health",
+            "item": [
+                { "name": "Liveness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/live" } },
+                { "name": "Readiness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" } }
+            ]
+        },
+        {
+            "name": "10 Métricas",
+            "item": [
+                { "name": "Prometheus", "request": { "method": "GET", "url": "{{baseUrl}}/q/metrics" } }
+            ]
+        }
+    ]
+}
