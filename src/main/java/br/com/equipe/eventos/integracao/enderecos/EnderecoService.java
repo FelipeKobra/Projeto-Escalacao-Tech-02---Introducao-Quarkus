@@ -1,6 +1,13 @@
 package br.com.equipe.eventos.integracao.enderecos;
 
+import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import java.time.temporal.ChronoUnit;
 
 /**
  * Consulta de endereço com tolerância a falhas: {@code @Retry} + {@code @Timeout} +
@@ -10,10 +17,21 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class EnderecoService {
 
-  // TODO (Romulo): injetar EnderecoClient com @RestClient.
+  private final EnderecoClient enderecoClient;
 
+  public EnderecoService(@RestClient EnderecoClient enderecoClient) {
+    this.enderecoClient = enderecoClient;
+  }
+
+  @Retry(maxRetries = 3, jitter = 100, delay = 500L, delayUnit = ChronoUnit.MILLIS)
+  @ExponentialBackoff(factor = 2, maxDelay = 60000)
+  @Timeout(value = 5000L, unit = ChronoUnit.MILLIS)
+  @Fallback(fallbackMethod = "fallback")
   public EnderecoExterno buscar(final String cep) {
-    // TODO (Romulo): chamar o client; anotar com @Retry, @Timeout e @Fallback.
-    throw new UnsupportedOperationException("TODO");
+    return enderecoClient.buscar(cep);
+  }
+
+  public EnderecoExterno fallback(String cep) {
+    return new EnderecoExterno(cep, "logradouro", "bairro", "cidade", "uf");
   }
 }
