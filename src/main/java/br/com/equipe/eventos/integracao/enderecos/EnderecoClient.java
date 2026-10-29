@@ -9,7 +9,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
  * REST Client do serviço de endereços. A URL vem de {@code quarkus.rest-client.enderecos-api.url}
- * (TODO Romulo: adicionar no application.properties).
  */
 @Path("/enderecos")
 @RegisterRestClient(configKey = "enderecos-api")
