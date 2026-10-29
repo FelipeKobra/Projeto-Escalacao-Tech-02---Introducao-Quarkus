@@ -1,5 +1,6 @@
 package br.com.equipe.eventos.platform.metrics;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
@@ -9,11 +10,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class EventoMetricas {
 
-  // TODO (Romulo): receber MeterRegistry no construtor e registrar um Counter "eventos.inscricoes".
+  private final MeterRegistry meterRegistry;
+
+  public EventoMetricas(MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
   public void registrarInscricao() {
-    // TODO (Romulo): counter.increment(); chamar no EventoService.inscrever depois do merge do
-    // Felipe.
-    throw new UnsupportedOperationException("TODO");
+    this.meterRegistry.counter("eventos.inscricoes").increment();
   }
 }
