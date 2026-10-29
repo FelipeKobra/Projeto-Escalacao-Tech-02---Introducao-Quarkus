@@ -3,6 +3,8 @@ package br.com.equipe.eventos.evento.domain;
 import br.com.equipe.eventos.evento.boundary.EventoRequest;
 import br.com.equipe.eventos.evento.repository.Evento;
 import br.com.equipe.eventos.evento.repository.EventoRepository;
+import br.com.equipe.eventos.integracao.enderecos.EnderecoExterno;
+import br.com.equipe.eventos.integracao.enderecos.EnderecoService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
@@ -16,9 +18,11 @@ import java.util.List;
 public class EventoService {
 
   private final EventoRepository repository;
+  private final EnderecoService enderecoService;
 
-  public EventoService(final EventoRepository repository) {
+  public EventoService(final EventoRepository repository, EnderecoService enderecoService) {
     this.repository = repository;
+    this.enderecoService = enderecoService;
   }
 
   public List<Evento> listar() {
@@ -86,5 +90,10 @@ public class EventoService {
     evento.setCep(request.cep());
     evento.setDataHora(request.dataHora());
     evento.setCapacidade(request.capacidade());
+  }
+
+  public EnderecoExterno getEndereco(Long id) {
+    Evento evento = buscar(id);
+    return enderecoService.buscar(evento.getCep());
   }
 }
