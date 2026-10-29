@@ -22,7 +22,8 @@ public class EventoService {
   private final EnderecoService enderecoService;
   private final EventoMetricas metricas;
 
-  public EventoService(final EventoRepository repository, EnderecoService enderecoService, EventoMetricas metricas) {
+  public EventoService(
+      final EventoRepository repository, EnderecoService enderecoService, EventoMetricas metricas) {
     this.repository = repository;
     this.enderecoService = enderecoService;
     this.metricas = metricas;

@@ -2,12 +2,11 @@ package br.com.equipe.eventos.integracao.enderecos;
 
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.temporal.ChronoUnit;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-
-import java.time.temporal.ChronoUnit;
 
 /**
  * Consulta de endereço com tolerância a falhas: {@code @Retry} + {@code @Timeout} +
