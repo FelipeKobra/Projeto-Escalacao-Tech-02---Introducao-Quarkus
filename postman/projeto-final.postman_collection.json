@@ -6,14 +6,115 @@
     },
     "variable": [
         { "key": "baseUrl", "value": "http://localhost:8080" },
-        { "key": "mockUrl", "value": "http://localhost:8081" }
+        { "key": "mockUrl", "value": "http://localhost:8081" },
+        { "key": "eventoId", "value": "" }
     ],
     "item": [
         {
             "name": "01-02 CRUD de eventos",
             "item": [
                 { "name": "Listar eventos", "request": { "method": "GET", "url": "{{baseUrl}}/eventos" } },
-                { "name": "Buscar evento 1", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/1" } }
+                { "name": "Buscar evento 1", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/1" } },
+                {
+                    "name": "Criar evento (201 + Location)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "pm.test('Header Location', () => pm.response.to.have.header('Location'));",
+                                    "pm.collectionVariables.set('eventoId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nome\": \"Hackathon Quarkus\",\n  \"descricao\": \"Maratona de 8 horas\",\n  \"cep\": \"30130010\",\n  \"dataHora\": \"2026-12-20T09:00:00\",\n  \"capacidade\": 50\n}"
+                        },
+                        "url": "{{baseUrl}}/eventos"
+                    }
+                },
+                {
+                    "name": "Atualizar evento criado (200)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nome\": \"Hackathon Quarkus (2ª edição)\",\n  \"descricao\": \"Maratona de 8 horas\",\n  \"cep\": \"30130010\",\n  \"dataHora\": \"2026-12-20T09:00:00\",\n  \"capacidade\": 60\n}"
+                        },
+                        "url": "{{baseUrl}}/eventos/{{eventoId}}"
+                    }
+                },
+                { "name": "Buscar evento criado (200)", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}" } },
+                {
+                    "name": "Remover evento criado (204)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+                            }
+                        }
+                    ],
+                    "request": { "method": "DELETE", "url": "{{baseUrl}}/eventos/{{eventoId}}" }
+                }
+            ]
+        },
+        {
+            "name": "05 Regra de negócio",
+            "item": [
+                { "name": "Inscrever no evento 1 (200, vagas diminuem)", "request": { "method": "POST", "url": "{{baseUrl}}/eventos/1/inscricoes" } },
+                { "name": "Inscrever no evento 2 lotado (409 EVENTO_LOTADO)", "request": { "method": "POST", "url": "{{baseUrl}}/eventos/2/inscricoes" } },
+                {
+                    "name": "Capacidade abaixo dos inscritos (409 CAPACIDADE_ABAIXO_DOS_INSCRITOS)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nome\": \"Meetup Java\",\n  \"descricao\": \"Novidades do Java 21\",\n  \"cep\": \"20040002\",\n  \"dataHora\": \"2026-12-15T18:30:00\",\n  \"capacidade\": 1\n}"
+                        },
+                        "url": "{{baseUrl}}/eventos/2"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "13 PUT → GET",
+            "item": [
+                {
+                    "name": "PUT evento 1 (capacidade 40)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nome\": \"Workshop de Quarkus\",\n  \"descricao\": \"Introdução prática ao Quarkus\",\n  \"cep\": \"01310100\",\n  \"dataHora\": \"2026-12-10T19:00:00\",\n  \"capacidade\": 40\n}"
+                        },
+                        "url": "{{baseUrl}}/eventos/1"
+                    }
+                },
+                {
+                    "name": "GET evento 1 (mostra capacidade 40)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('Capacidade alterada', () => pm.expect(pm.response.json().capacidade).to.eql(40));"]
+                            }
+                        }
+                    ],
+                    "request": { "method": "GET", "url": "{{baseUrl}}/eventos/1" }
+                }
             ]
         },
         {
