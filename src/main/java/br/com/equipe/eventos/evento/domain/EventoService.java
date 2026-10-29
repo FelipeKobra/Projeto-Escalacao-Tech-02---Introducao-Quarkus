@@ -96,7 +96,7 @@ public class EventoService {
     evento.setCapacidade(request.capacidade());
   }
 
-  public EnderecoExterno getEndereco(Long id) {
+  public EnderecoExterno buscarEndereco(Long id) {
     Evento evento = buscar(id);
     return enderecoService.buscar(evento.getCep());
   }

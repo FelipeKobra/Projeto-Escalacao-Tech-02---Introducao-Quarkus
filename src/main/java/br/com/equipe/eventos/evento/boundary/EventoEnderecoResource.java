@@ -23,7 +23,7 @@ public class EventoEnderecoResource {
   @GET
   @Path("/{id}/endereco")
   public EventoEnderecoResponse buscar(@PathParam("id") Long id){
-    EnderecoExterno enderecoExterno = eventoService.getEndereco(id);
+    EnderecoExterno enderecoExterno = eventoService.buscarEndereco(id);
     return EventoEnderecoResponse.de(enderecoExterno);
   }
 
