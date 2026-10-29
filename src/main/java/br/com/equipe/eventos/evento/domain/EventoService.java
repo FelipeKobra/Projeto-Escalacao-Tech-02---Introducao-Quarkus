@@ -5,6 +5,7 @@ import br.com.equipe.eventos.evento.repository.Evento;
 import br.com.equipe.eventos.evento.repository.EventoRepository;
 import br.com.equipe.eventos.integracao.enderecos.EnderecoExterno;
 import br.com.equipe.eventos.integracao.enderecos.EnderecoService;
+import br.com.equipe.eventos.platform.metrics.EventoMetricas;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
@@ -19,10 +20,12 @@ public class EventoService {
 
   private final EventoRepository repository;
   private final EnderecoService enderecoService;
+  private final EventoMetricas metricas;
 
-  public EventoService(final EventoRepository repository, EnderecoService enderecoService) {
+  public EventoService(final EventoRepository repository, EnderecoService enderecoService, EventoMetricas metricas) {
     this.repository = repository;
     this.enderecoService = enderecoService;
+    this.metricas = metricas;
   }
 
   public List<Evento> listar() {
@@ -81,6 +84,7 @@ public class EventoService {
       throw new RegraDeNegocioException("EVENTO_LOTADO", "O evento " + id + " está lotado.");
     }
     evento.setInscritos(evento.getInscritos() + 1);
+    metricas.registrarInscricao();
     return evento;
   }
 
