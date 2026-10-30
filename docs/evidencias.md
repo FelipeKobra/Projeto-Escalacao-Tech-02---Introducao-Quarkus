@@ -171,9 +171,10 @@ repita com `externoModo=DOWN`. Se parar completamente o mock, execute só a requ
 a chamada direta ao mock terá erro de conexão, não uma resposta HTTP 503.
 
 `GET /eventos/{id}/endereco`, retry/timeout/fallback e os campos de sucesso/fallback dependem
-da parte de Romulo. O roteiro assume sucesso com campos do endereço e fallback HTTP 200 com
-`cep`/`disponivel=false`, conforme o exemplo do contrato de divisão. Confirmar esse formato
-na integração antes de registrar a demonstração como aprovada; não há teste de fallback executado aqui.
+da parte de Romulo. Na integração verificada pela [demonstração ponta a ponta](#demonstração-ponta-a-ponta-script-python),
+o fallback responde HTTP 200 com o `cep` original e valores genéricos (`"logradouro"`,
+`"cidade"` etc.), em cerca de 3,4 s, por causa das novas tentativas. Com o mock de volta, a API
+retorna o endereço real. O roteiro Postman verifica exatamente esse comportamento.
 
 ## Coleção Postman e demonstração final
 
@@ -185,6 +186,7 @@ coleção, sem variáveis de ambiente homônimas que as ocultem.
    consulta, atualiza e comprova o PUT por GET. `dataFutura` é renovada antes das requisições.
 2. Execute “Regra de negocio e contador”: captura a métrica, inscreve duas vezes, rejeita
    lotação e redução de capacidade, comprova estado preservado e contador aumentado em dois.
+   O contador só aparece em `/q/metrics` após a primeira inscrição; antes disso, conta como 0.
    Não execute tráfego de inscrição concorrente durante a comparação.
 3. Execute “Erros e validacao”: POST inválido, PUT vazio e id inexistente. O 409 já é coberto
    pela pasta de regra. O contrato inclui mensagens não vazias, timestamp e `campos`.
@@ -192,8 +194,46 @@ coleção, sem variáveis de ambiente homônimas que as ocultem.
    suas pré-condições. Reiniciar dev apaga o banco: recrie o evento se isso acontecer.
 5. Execute “Limpeza CRUD” por último: DELETE 204 sem corpo e GET 404 após remoção.
 
-A coleção é um roteiro com assertions, não uma simulação de resultados. A execução end-to-end
-permanece pendente das implementações ausentes; não há relatório Postman aprovado nesta branch.
+A coleção é um roteiro com assertions, não uma simulação de resultados. Não há relatório Postman
+aprovado nesta branch; a execução automatizada equivalente está na seção seguinte.
+
+## Demonstração ponta a ponta (script Python)
+
+`e2e/demonstracao_e2e.py` usa só a biblioteca padrão do Python 3.10+ e JDK 21. Ele empacota a API
+e o mock, sobe ambos com `java -jar` (profile prod) em portas livres e banco H2 em arquivo
+temporário. Depois, percorre os casos de uso, imprimindo cada requisição e o resultado:
+
+| Seção | Requisitos | O que comprova |
+|-------|------------|----------------|
+| Plataforma | 04, 07 | `Profile prod activated`, porta e JDBC por variável de ambiente, OpenAPI |
+| Health | 08 | liveness/readiness UP e checks registrados |
+| CRUD | 01, 02, 04, 12, 13 | POST 201 + `Location`, GET, listagem, PUT persistido |
+| Regras | 05, 10, 13 | lotação 409, capacidade abaixo dos inscritos 409, estado preservado, 20 inscrições simultâneas em 5 vagas (5×200, 15×409), contador igual às aceitas |
+| Erros | 02, 14–16 | 400 com cada campo, PUT `{}`, JSON malformado, tipo errado, 415, 405, 404 de evento e de rota, sempre no contrato `codigo`/`mensagem`/`timestamp`/`campos` |
+| Externo UP | 06 | mock 200/404, endereço real via API, CEP desconhecido sem 5xx |
+| Externo DOWN | 09 | mock parado e `MOCK_FALHAR=true`: fallback controlado; recuperação ao religar |
+| Reinício | 07, 08, 13 | dados sobrevivem ao restart em prod; `EVENTOS_MANUTENCAO=true` deixa readiness DOWN e liveness UP |
+| Limpeza | 01, 02, 12 | DELETE 204 sem corpo, GET/DELETE seguintes 404, remoção dos dados criados |
+
+```powershell
+python e2e\demonstracao_e2e.py                 # build + demonstração completa
+python e2e\demonstracao_e2e.py --sem-build     # reaproveita os jars
+python e2e\demonstracao_e2e.py --mvn mvn --verboso
+python e2e\demonstracao_e2e.py --usar-servicos-existentes --api-url http://localhost:8080
+```
+
+Cada passo termina como OK, FALHA, PENDENTE (recurso ainda não integrado ou que exige que o
+script controle os processos) ou PULADO (depende de dado de passo anterior). O código de saída é
+1 se houver FALHA, ou também PENDENTE com `--estrito`. O relatório fica em
+`target/e2e/relatorio.md` e os logs em `target/e2e/*.log`.
+
+Resultados observados:
+
+- Nesta branch: 10 OK, 0 FALHA, 25 PENDENTE e 6 PULADO. Sem o `EventoResource`, os cenários de
+  CRUD ficam pendentes; plataforma, rota inexistente 404, mock UP/503/parado e reinício passam.
+- Em cópia temporária de `feat/romulo-integracao-observabilidade` (que inclui o CRUD de `main`),
+  com o tratamento de erros e a validação desta branch sobrepostos: 39 OK, 0 FALHA e 2 PENDENTE.
+  Os pendentes são os health checks próprios, ainda com TODO naquela branch.
 
 ## Verificação local
 
@@ -213,4 +253,4 @@ e um de persistência); `mvn -f mock-enderecos/pom.xml test` aprovado (dois test
 `mvn -DskipTests package` aprovado. O erro registrado no cenário de 500 é intencional e
 confirma que a falha não é silenciada. A coleção contém 26 requisições e 28 scripts com
 sintaxe JavaScript verificada, inclusive o caso de JSON propositalmente malformado.
-Isso não equivale a uma execução Postman end-to-end.
+Isso não equivale a uma execução Postman end-to-end; a demonstração Python acima cobre esse papel.

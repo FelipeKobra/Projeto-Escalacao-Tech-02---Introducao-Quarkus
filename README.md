@@ -145,6 +145,18 @@ Após integrar as demais partes, execute CRUD → regra/métricas → erros → 
 Os cenários UP/DOWN e profiles têm pré-condições manuais descritas nas pastas e nas
 [evidências](docs/evidencias.md); não podem ser comprovados simplesmente rodando tudo uma vez.
 
+### Demonstração ponta a ponta automatizada
+
+```powershell
+python e2e\demonstracao_e2e.py
+```
+
+O script ([e2e/demonstracao_e2e.py](e2e/demonstracao_e2e.py)) só usa a biblioteca padrão do
+Python e exige JDK 21. Ele empacota e sobe API e mock em profile prod, depois percorre CRUD,
+regras, concorrência, métrica, erros, externo UP/DOWN com fallback, health, persistência após
+reinício e limpeza, gerando `target/e2e/relatorio.md`. Recursos ainda não integrados aparecem
+como PENDENTE. Opções e resultados: [evidências](docs/evidencias.md#demonstração-ponta-a-ponta-script-python).
+
 ## Testes e formatação
 
 ```powershell
@@ -157,7 +169,7 @@ Os cenários UP/DOWN e profiles têm pré-condições manuais descritas nas past
 RestAssured cobre validação POST/PUT, ausências e limites, erros 400/404/409, JSON inválido,
 rota inexistente, 405/415 e 500 padronizado. A entidade tem teste de persistência; o mock tem
 testes de CEP conhecido/desconhecido. Os testes dos mappers usam um recurso HTTP exclusivo de
-testes e não substituem a futura verificação end-to-end do CRUD.
+testes e não substituem a verificação end-to-end do CRUD feita pela demonstração Python.
 
 Detalhes do Lombok, justificativa para não usar `@Data` na entidade, matriz dos 16 requisitos e
 roteiro de verificação: [docs/evidencias.md](docs/evidencias.md).
