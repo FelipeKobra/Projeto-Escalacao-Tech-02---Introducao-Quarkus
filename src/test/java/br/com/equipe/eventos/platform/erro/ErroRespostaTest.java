@@ -118,6 +118,91 @@ class ErroRespostaTest {
     verificarContrato(resposta);
   }
 
+  @Test
+  void padronizaJsonMalformadoETiposInvalidos() {
+    for (final var corpo :
+        new String[] {"{", "{\"capacidade\":\"abc\"}", "{\"dataHora\":\"amanha\"}", "[]"}) {
+      final var resposta =
+          given()
+              .contentType(MediaType.APPLICATION_JSON)
+              .body(corpo)
+              .when()
+              .post("/teste-erros")
+              .then()
+              .statusCode(400)
+              .body("codigo", is("REQUISICAO_INVALIDA"))
+              .body("campos", empty());
+      verificarContrato(resposta);
+    }
+  }
+
+  @Test
+  void padronizaRotaInexistente() {
+    final var resposta =
+        given()
+            .when()
+            .get("/rota-inexistente")
+            .then()
+            .statusCode(404)
+            .body("codigo", is("HTTP_404"))
+            .body("campos", empty());
+    verificarContrato(resposta);
+  }
+
+  @Test
+  void padronizaMetodoNaoPermitido() {
+    final var resposta =
+        given()
+            .when()
+            .delete("/teste-erros/ausente")
+            .then()
+            .statusCode(405)
+            .body("codigo", is("HTTP_405"))
+            .body("campos", empty());
+    verificarContrato(resposta);
+  }
+
+  @Test
+  void preservaCabecalhosDaExcecaoHttp() {
+    given()
+        .when()
+        .get("/teste-erros/metodo")
+        .then()
+        .statusCode(405)
+        .header("Allow", org.hamcrest.Matchers.containsString("POST"))
+        .header("Allow", org.hamcrest.Matchers.containsString("PUT"))
+        .body("codigo", is("HTTP_405"));
+  }
+
+  @Test
+  void padronizaTipoDeMidiaNaoSuportado() {
+    final var resposta =
+        given()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body("texto")
+            .when()
+            .post("/teste-erros")
+            .then()
+            .statusCode(415)
+            .body("codigo", is("HTTP_415"))
+            .body("campos", empty());
+    verificarContrato(resposta);
+  }
+
+  @Test
+  void padronizaFalhaInesperadaSemExporDetalhesInternos() {
+    final var resposta =
+        given()
+            .when()
+            .get("/teste-erros/inesperado")
+            .then()
+            .statusCode(500)
+            .body("codigo", is("ERRO_INTERNO"))
+            .body("mensagem", is("Nao foi possivel processar a requisicao."))
+            .body("campos", empty());
+    verificarContrato(resposta);
+  }
+
   private void verificarContrato(final ValidatableResponse resposta) {
     final var json =
         resposta

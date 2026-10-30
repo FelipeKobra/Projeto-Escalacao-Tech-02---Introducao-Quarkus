@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -38,5 +39,17 @@ public class ErroResource {
   @Path("/lotado")
   public void lotado() {
     throw new RegraDeNegocioException("EVENTO_LOTADO", "Evento sem vagas disponiveis.");
+  }
+
+  @GET
+  @Path("/inesperado")
+  public void inesperado() {
+    throw new IllegalStateException("Detalhe interno que nao deve ser enviado ao cliente");
+  }
+
+  @GET
+  @Path("/metodo")
+  public void metodo() {
+    throw new NotAllowedException("POST", new String[] {"PUT"});
   }
 }
