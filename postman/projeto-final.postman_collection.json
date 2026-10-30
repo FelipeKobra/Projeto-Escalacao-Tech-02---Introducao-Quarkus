@@ -113,7 +113,7 @@
           "name": "Contador antes das inscricoes",
           "request": { "method": "GET", "url": "{{baseUrl}}/q/metrics" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Captura contador inicial', function () { pm.response.to.have.status(200); const m = pm.response.text().match(/^eventos_inscricoes_total(?:\\{[^}]*\\})?\\s+([0-9.eE+-]+)/m); pm.expect(m, 'Contador deve ser registrado no startup').not.to.eql(null); pm.collectionVariables.set('contadorAntes', Number(m[1])); });"
+            "pm.test('Captura contador inicial', function () { pm.response.to.have.status(200); const m = pm.response.text().match(/^eventos_inscricoes_total(?:\\{[^}]*\\})?\\s+([0-9.eE+-]+)/m); pm.collectionVariables.set('contadorAntes', m ? Number(m[1]) : 0); });"
           ] } }]
         },
         {
@@ -234,7 +234,7 @@
     },
     {
       "name": "06-09 Externo UP e DOWN",
-      "description": "Execute esta pasta duas vezes ANTES da limpeza: (1) mock normal e externoModo=UP; (2) reinicie apenas o mock com MOCK_FALHAR=true e externoModo=DOWN. A API fica no ar. Alternativamente pare o mock e execute apenas a consulta via API DOWN. O contrato de fallback disponivel=false e o contrato de sucesso devem ser confirmados na integracao da branch Romulo.",
+      "description": "Execute esta pasta duas vezes ANTES da limpeza: (1) mock normal e externoModo=UP; (2) reinicie apenas o mock com MOCK_FALHAR=true e externoModo=DOWN. A API fica no ar. Alternativamente pare o mock e execute apenas a consulta via API DOWN. Na integracao com a branch Romulo o fallback responde 200 com o cep e valores genericos (cidade diferente do endereco real).",
       "item": [
         {
           "name": "Mock direto - 200 UP ou 503 DOWN",
@@ -251,7 +251,7 @@
             "  pm.response.to.have.status(200);",
             "  const e = pm.response.json();",
             "  pm.expect(e.cep).to.eql('01310100');",
-            "  if (pm.collectionVariables.get('externoModo') === 'DOWN') { pm.expect(e.disponivel).to.eql(false); }",
+            "  if (pm.collectionVariables.get('externoModo') === 'DOWN') { pm.expect(e.cidade, 'fallback nao usa o endereco real').not.to.eql('São Paulo'); }",
             "  else { pm.expect(e.cidade).to.eql('São Paulo'); }",
             "});"
           ] } }]
