@@ -1,39 +1,322 @@
 {
-    "info": {
-        "name": "Eventos API — Projeto final",
-        "description": "Demonstrações dos requisitos 01 a 16. Suba o mock-enderecos (8081) e a API (8080) antes. Esqueleto inicial: o Wellington completa com todos os cenários.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  "info": {
+    "name": "Eventos API - Projeto final",
+    "description": "Roteiro dos requisitos 01 a 16. IMPORTANTE: esta branch implementa validacao/mappers, nao o CRUD e a integracao das outras branches. Os cenarios /eventos so passam apos integra-las; consulte docs/evidencias.md. Execute as pastas em ordem, com a API em baseUrl. Os dados sao criados pela colecao e removidos ao final. Para UP/DOWN e profiles, siga as pre-condicoes de cada pasta; nenhuma requisicao altera configuracao ou para processos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "mockUrl", "value": "http://localhost:8081" },
+    { "key": "devUrl", "value": "http://localhost:8080" },
+    { "key": "prodUrl", "value": "http://localhost:8082" },
+    { "key": "eventoId", "value": "" },
+    { "key": "dataFutura", "value": "" },
+    { "key": "externoModo", "value": "UP" },
+    { "key": "readinessEsperada", "value": "UP" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const futura = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);",
+          "pm.collectionVariables.set('dataFutura', futura.toISOString().slice(0, 19));"
+        ]
+      }
     },
-    "variable": [
-        { "key": "baseUrl", "value": "http://localhost:8080" },
-        { "key": "mockUrl", "value": "http://localhost:8081" }
-    ],
-    "item": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.response.code >= 400 && pm.request.url.toString().includes('/eventos')) {",
+          "  pm.test('Erro padronizado: codigo/mensagem/timestamp/campos', function () {",
+          "    const erro = pm.response.json();",
+          "    pm.expect(Object.keys(erro).sort()).to.eql(['campos', 'codigo', 'mensagem', 'timestamp']);",
+          "    pm.expect(erro.codigo).to.be.a('string').and.not.empty;",
+          "    pm.expect(erro.mensagem).to.be.a('string').and.not.empty;",
+          "    pm.expect(erro.timestamp).to.be.a('string');",
+          "    pm.expect(Number.isNaN(Date.parse(erro.timestamp))).to.eql(false);",
+          "    pm.expect(erro.campos).to.be.an('array');",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01-02-12-13 CRUD",
+      "description": "Depende do EventoResource/EventoService do Felipe. Nao usa ids do import.sql. Atualizar e consultar devem preservar inscritos e demonstrar persistencia.",
+      "item": [
         {
-            "name": "01-02 CRUD de eventos",
-            "item": [
-                { "name": "Listar eventos", "request": { "method": "GET", "url": "{{baseUrl}}/eventos" } },
-                { "name": "Buscar evento 1", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/1" } }
-            ]
+          "name": "Criar evento - 201 e Location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\":\"Evento Postman\",\"descricao\":\"Criado pelo roteiro\",\"cep\":\"01310100\",\"dataHora\":\"{{dataFutura}}\",\"capacidade\":2}" },
+            "url": "{{baseUrl}}/eventos"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201, Location e id', function () {",
+            "  pm.response.to.have.status(201);",
+            "  const evento = pm.response.json();",
+            "  pm.expect(evento.id).to.be.a('number');",
+            "  pm.expect(pm.response.headers.get('Location')).to.match(new RegExp('/eventos/' + evento.id + '$'));",
+            "  pm.expect(evento.inscritos).to.eql(0);",
+            "  pm.expect(evento.vagasDisponiveis).to.eql(2);",
+            "  pm.collectionVariables.set('eventoId', evento.id);",
+            "});"
+          ] } }]
         },
         {
-            "name": "06 Serviço externo (mock)",
-            "item": [
-                { "name": "Mock: endereço por CEP", "request": { "method": "GET", "url": "{{mockUrl}}/enderecos/01310100" } }
-            ]
+          "name": "Listar eventos - 200",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Lista inclui evento criado', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().map(e => e.id)).to.include(Number(pm.collectionVariables.get('eventoId'))); });"
+          ] } }]
         },
         {
-            "name": "08 Health",
-            "item": [
-                { "name": "Liveness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/live" } },
-                { "name": "Readiness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" } }
-            ]
+          "name": "Buscar evento criado - 200",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Consulta por id', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('eventoId'))); });"
+          ] } }]
         },
         {
-            "name": "10 Métricas",
-            "item": [
-                { "name": "Prometheus", "request": { "method": "GET", "url": "{{baseUrl}}/q/metrics" } }
-            ]
+          "name": "Atualizar evento - 200",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\":\"Evento atualizado\",\"descricao\":\"Alterado pelo PUT\",\"cep\":\"01310100\",\"dataHora\":\"{{dataFutura}}\",\"capacidade\":2}" },
+            "url": "{{baseUrl}}/eventos/{{eventoId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('PUT retorna alteracao', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().nome).to.eql('Evento atualizado'); });"
+          ] } }]
+        },
+        {
+          "name": "Consultar apos PUT - alteracao persistida",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('GET comprova atualizacao', function () { pm.response.to.have.status(200); const e = pm.response.json(); pm.expect(e.nome).to.eql('Evento atualizado'); pm.expect(e.descricao).to.eql('Alterado pelo PUT'); pm.expect(e.capacidade).to.eql(2); });"
+          ] } }]
         }
-    ]
+      ]
+    },
+    {
+      "name": "05-10 Regra de negocio e contador",
+      "description": "Execute apos CRUD. Duas inscricoes esgotam a capacidade. Rejeicoes nao podem alterar o contador. A metrica depende de EventoMetricas do Romulo, ligada ao service apos integracao.",
+      "item": [
+        {
+          "name": "Contador antes das inscricoes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/q/metrics" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Captura contador inicial', function () { pm.response.to.have.status(200); const m = pm.response.text().match(/^eventos_inscricoes_total(?:\\{[^}]*\\})?\\s+([0-9.eE+-]+)/m); pm.expect(m, 'Contador deve ser registrado no startup').not.to.eql(null); pm.collectionVariables.set('contadorAntes', Number(m[1])); });"
+          ] } }]
+        },
+        {
+          "name": "Primeira inscricao - 200",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/eventos/{{eventoId}}/inscricoes" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Uma vaga restante', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().inscritos).to.eql(1); pm.expect(pm.response.json().vagasDisponiveis).to.eql(1); });"
+          ] } }]
+        },
+        {
+          "name": "Segunda inscricao - 200",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/eventos/{{eventoId}}/inscricoes" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Evento lotado', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().inscritos).to.eql(2); pm.expect(pm.response.json().vagasDisponiveis).to.eql(0); });"
+          ] } }]
+        },
+        {
+          "name": "Terceira inscricao - 409 EVENTO_LOTADO",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/eventos/{{eventoId}}/inscricoes" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Regra impede excesso de inscricoes', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().codigo).to.eql('EVENTO_LOTADO'); pm.expect(pm.response.json().campos).to.eql([]); });"
+          ] } }]
+        },
+        {
+          "name": "Reduzir capacidade abaixo dos inscritos - 409",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\":\"Evento atualizado\",\"descricao\":\"Alterado pelo PUT\",\"cep\":\"01310100\",\"dataHora\":\"{{dataFutura}}\",\"capacidade\":1}" },
+            "url": "{{baseUrl}}/eventos/{{eventoId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Regra preserva inscritos', function () { pm.response.to.have.status(409); pm.expect(pm.response.json().codigo).to.eql('CAPACIDADE_ABAIXO_DOS_INSCRITOS'); });"
+          ] } }]
+        },
+        {
+          "name": "Consultar apos conflitos - sem alteracoes parciais",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Estado preservado', function () { pm.response.to.have.status(200); const e = pm.response.json(); pm.expect(e.inscritos).to.eql(2); pm.expect(e.capacidade).to.eql(2); });"
+          ] } }]
+        },
+        {
+          "name": "Contador apos inscricoes e rejeicoes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/q/metrics" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Apenas sucessos incrementam o contador em 2 (sem trafego concorrente)', function () { pm.response.to.have.status(200); const m = pm.response.text().match(/^eventos_inscricoes_total(?:\\{[^}]*\\})?\\s+([0-9.eE+-]+)/m); pm.expect(m).not.to.eql(null); pm.expect(Number(m[1])).to.eql(Number(pm.collectionVariables.get('contadorAntes')) + 2); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "14-15-16 Erros e validacao",
+      "item": [
+        {
+          "name": "POST invalido - 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\":\" \",\"cep\":\"01310-100\",\"dataHora\":\"2000-01-01T10:00:00\",\"capacidade\":0}" },
+            "url": "{{baseUrl}}/eventos"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Restricoes identificam campos', function () { pm.response.to.have.status(400); const e = pm.response.json(); pm.expect(e.codigo).to.eql('REQUISICAO_INVALIDA'); ['nome', 'cep', 'dataHora', 'capacidade'].forEach(c => pm.expect(e.campos.some(v => v.startsWith(c + ': '))).to.eql(true)); });"
+          ] } }]
+        },
+        {
+          "name": "PUT com campos ausentes - 400",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/eventos/{{eventoId}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Obrigatorios rejeitados', function () { pm.response.to.have.status(400); pm.expect(pm.response.json().codigo).to.eql('REQUISICAO_INVALIDA'); pm.expect(pm.response.json().campos).to.have.lengthOf(4); });"
+          ] } }]
+        },
+        {
+          "name": "Evento inexistente - 404",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/9223372036854775807" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Evento nao encontrado', function () { pm.response.to.have.status(404); pm.expect(pm.response.json().codigo).to.eql('EVENTO_NAO_ENCONTRADO'); pm.expect(pm.response.json().campos).to.eql([]); });"
+          ] } }]
+        },
+        {
+          "name": "JSON malformado - 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\":" },
+            "url": "{{baseUrl}}/eventos"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('JSON invalido usa contrato comum', function () { pm.response.to.have.status(400); pm.expect(pm.response.json().codigo).to.eql('REQUISICAO_INVALIDA'); });"
+          ] } }]
+        },
+        {
+          "name": "Rota inexistente - 404 HTTP",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/rota/inexistente" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Rota nao encontrada usa contrato comum', function () { pm.response.to.have.status(404); pm.expect(pm.response.json().codigo).to.eql('HTTP_404'); });"
+          ] } }]
+        },
+        {
+          "name": "Midia nao suportada - 415",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "text/plain" }],
+            "body": { "mode": "raw", "raw": "texto" },
+            "url": "{{baseUrl}}/eventos"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Tipo de midia invalido usa contrato comum', function () { pm.response.to.have.status(415); pm.expect(pm.response.json().codigo).to.eql('HTTP_415'); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "06-09 Externo UP e DOWN",
+      "description": "Execute esta pasta duas vezes ANTES da limpeza: (1) mock normal e externoModo=UP; (2) reinicie apenas o mock com MOCK_FALHAR=true e externoModo=DOWN. A API fica no ar. Alternativamente pare o mock e execute apenas a consulta via API DOWN. O contrato de fallback disponivel=false e o contrato de sucesso devem ser confirmados na integracao da branch Romulo.",
+      "item": [
+        {
+          "name": "Mock direto - 200 UP ou 503 DOWN",
+          "request": { "method": "GET", "url": "{{mockUrl}}/enderecos/01310100" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Mock no modo escolhido', function () { const up = pm.collectionVariables.get('externoModo') === 'UP'; pm.response.to.have.status(up ? 200 : 503); if (up) { pm.expect(pm.response.json().cep).to.eql('01310100'); pm.expect(pm.response.json().cidade).to.eql('São Paulo'); } });"
+          ] } }]
+        },
+        {
+          "name": "Endereco via API - sucesso ou fallback",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}/endereco" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Resposta controlada mesmo sem externo', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const e = pm.response.json();",
+            "  pm.expect(e.cep).to.eql('01310100');",
+            "  if (pm.collectionVariables.get('externoModo') === 'DOWN') { pm.expect(e.disponivel).to.eql(false); }",
+            "  else { pm.expect(e.cidade).to.eql('São Paulo'); }",
+            "});"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "07 Profiles dev e prod",
+      "description": "Pre-condicao manual: API dev em devUrl e jar prod em prodUrl (porta 8082). A consulta health comprova acessibilidade, NAO comprova qual profile esta ativo. Para evidencia de profile confira o log de startup e teste persistencia apos reiniciar prod; veja docs/evidencias.md. A propriedade propria e seu efeito dependem de Romulo.",
+      "item": [
+        {
+          "name": "Instancia dev acessivel",
+          "request": { "method": "GET", "url": "{{devUrl}}/q/health/live" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Liveness na instancia dev', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('UP'); });"
+          ] } }]
+        },
+        {
+          "name": "Instancia prod acessivel",
+          "request": { "method": "GET", "url": "{{prodUrl}}/q/health/live" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Liveness na instancia prod', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('UP'); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "08 Health UP e DOWN",
+      "description": "Liveness agregado nao prova um check proprio. Readiness H2 existe pela extensao; check de manutencao depende de Romulo. Apos integracao, execute com EVENTOS_MANUTENCAO=true e readinessEsperada=DOWN (503), depois restaure false/UP. Nao ha endpoint para mudar configuracoes.",
+      "item": [
+        {
+          "name": "Liveness - 200 UP",
+          "request": { "method": "GET", "url": "{{baseUrl}}/q/health/live" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Aplicacao viva', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('UP'); });"
+          ] } }]
+        },
+        {
+          "name": "Readiness - 200 UP ou 503 DOWN",
+          "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Readiness no estado esperado', function () { const estado = pm.collectionVariables.get('readinessEsperada'); pm.response.to.have.status(estado === 'UP' ? 200 : 503); pm.expect(pm.response.json().status).to.eql(estado); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "02 Limpeza CRUD",
+      "description": "Execute por ultimo. O GET seguinte ao DELETE comprova a remocao, sem depender de id fixo.",
+      "item": [
+        {
+          "name": "Remover evento - 204 sem corpo",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/eventos/{{eventoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Remocao sem corpo', function () { pm.response.to.have.status(204); pm.expect(pm.response.text()).to.eql(''); });"
+          ] } }]
+        },
+        {
+          "name": "Buscar removido - 404",
+          "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Remocao persistida', function () { pm.response.to.have.status(404); pm.expect(pm.response.json().codigo).to.eql('EVENTO_NAO_ENCONTRADO'); });"
+          ] } }]
+        }
+      ]
+    }
+  ]
 }
