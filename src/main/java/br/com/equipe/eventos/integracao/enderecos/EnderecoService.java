@@ -22,9 +22,14 @@ public class EnderecoService {
     this.enderecoClient = enderecoClient;
   }
 
-  @Retry(maxRetries = 3, jitter = 100, delay = 500L, delayUnit = ChronoUnit.MILLIS)
-  @ExponentialBackoff(factor = 2, maxDelay = 60000)
-  @Timeout(value = 5000L, unit = ChronoUnit.MILLIS)
+  @Retry(
+      maxRetries = 2,
+      jitter = 50,
+      jitterDelayUnit = ChronoUnit.MILLIS,
+      delay = 200L,
+      delayUnit = ChronoUnit.MILLIS)
+  @ExponentialBackoff(factor = 2, maxDelay = 1000, maxDelayUnit = ChronoUnit.MILLIS)
+  @Timeout(value = 1000L, unit = ChronoUnit.MILLIS)
   @Fallback(fallbackMethod = "fallback")
   public EnderecoExterno buscar(final String cep) {
     return enderecoClient.buscar(cep);
