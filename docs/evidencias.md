@@ -10,11 +10,11 @@ Preencher conforme as partes forem integradas. Quem consolida: Wellington.
 | 03 | Lombok aplicado conscientemente | Wellington | `evento/repository/Evento.java`, `platform/erro/ErroResposta.java` | | ⬜ |
 | 04 | API Quarkus/JAX-RS | Felipe | `evento/boundary/EventoResource.java` | `@Path("/eventos")`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `@Produces`/`@Consumes` JSON; Postman "Listar eventos"; `EventoResourceTest.listarResponde200ComOsEventos` | ✅ |
 | 05 | CDI e regra de negócio | Felipe | `evento/domain/EventoService.java` | `EventoService` `@ApplicationScoped` injetado por construtor no resource. Regras: `EVENTO_LOTADO` e `CAPACIDADE_ABAIXO_DOS_INSCRITOS`. Postman "05 Regra de negócio"; `EventoServiceTest.inscreverEmEventoLotadoLancaEventoLotado`, `atualizarCapacidadeAbaixoDosInscritosLancaRegraDeNegocio` | ✅ |
-| 06 | Consumo de API externa | Romulo | `integracao/enderecos/EnderecoClient.java` | | ⬜ |
-| 07 | Configurações e profiles | Romulo | `src/main/resources/application.properties` | | ⬜ |
-| 08 | Liveness e readiness | Romulo | `platform/health/` | | ⬜ |
-| 09 | Tolerância a falhas | Romulo | `integracao/enderecos/EnderecoService.java` | | ⬜ |
-| 10 | Métrica de negócio | Romulo | `platform/metrics/EventoMetricas.java` | | ⬜ |
+| 06 | Consumo de API externa | Romulo | `integracao/enderecos/EnderecoClient.java` |  Postman `GET /eventos/{id}/endereco`. | ✅ |
+| 07 | Configurações e profiles | Romulo | `src/main/resources/application.properties` | `%dev.eventos.app` e `%prd.eventos.app` | ✅ |
+| 08 | Liveness e readiness | Romulo | `platform/health/` | Postman `GET /q/health`, `GET /q/health/live`, `GET /q/health/ready`. Para deixar a aplicação ready UP ou ready DOWN chamar os endpoints `GET /ready/up` e `GET /ready/down`, são endpoints para fins de demonstração. | ✅ |
+| 09 | Tolerância a falhas | Romulo | `integracao/enderecos/EnderecoService.java` | Service `integracao/enderecos/EnderecoService.java`, mostrar fallback, retry, e backoff exponencial com jitter | ✅ |
+| 10 | Métrica de negócio | Romulo | `platform/metrics/EventoMetricas.java` | Mostrar uso no `EventoService.java:inscrever` e no endpoint `GET /q/metrics` `eventos.inscricoes` | ✅ |
 | 11 | Entidade JPA | Base | `evento/repository/Evento.java` | `EventoRepositoryTest` | ✅ |
 | 12 | CRUD Panache Repository | Felipe | `evento/repository/EventoRepository.java`, `evento/domain/EventoService.java` | `listAll`, `findByIdOptional`, `persist`, `delete` do `PanacheRepository`; Postman "01-02 CRUD de eventos"; `EventoServiceTest` (criar, atualizar, remover) | ✅ |
 | 13 | Transações e atualização | Felipe | `evento/domain/EventoService.java` | `@Transactional` em criar/atualizar/remover/inscrever; Postman "13 PUT → GET"; `EventoResourceTest.putAlteraODadoConsultadoDepois` | ✅ |
