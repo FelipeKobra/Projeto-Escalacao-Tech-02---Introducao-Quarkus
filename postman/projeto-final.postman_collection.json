@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Eventos API - Projeto final",
-    "description": "Roteiro dos requisitos 01 a 16. IMPORTANTE: esta branch implementa validacao/mappers, nao o CRUD e a integracao das outras branches. Os cenarios /eventos so passam apos integra-las; consulte docs/evidencias.md. Execute as pastas em ordem, com a API em baseUrl. Os dados sao criados pela colecao e removidos ao final. Para UP/DOWN e profiles, siga as pre-condicoes de cada pasta; nenhuma requisicao altera configuracao ou para processos.",
+    "description": "Roteiro completo dos requisitos 01 a 16. Suba o mock-enderecos (8081) e a API (8080) antes. Execute as pastas em ordem, com a API em baseUrl. Os dados sao criados pela colecao e removidos ao final. Para externo UP/DOWN e profiles, siga as pre-condicoes descritas em cada pasta e em docs/evidencias.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -48,7 +48,7 @@
   "item": [
     {
       "name": "01-02-12-13 CRUD",
-      "description": "Depende do EventoResource/EventoService do Felipe. Nao usa ids do import.sql. Atualizar e consultar devem preservar inscritos e demonstrar persistencia.",
+      "description": "Cria evento proprio (sem depender de ids do import.sql), lista, consulta, atualiza e comprova persistencia do PUT via GET.",
       "item": [
         {
           "name": "Criar evento - 201 e Location",
@@ -107,7 +107,7 @@
     },
     {
       "name": "05-10 Regra de negocio e contador",
-      "description": "Execute apos CRUD. Duas inscricoes esgotam a capacidade. Rejeicoes nao podem alterar o contador. A metrica depende de EventoMetricas do Romulo, ligada ao service apos integracao.",
+      "description": "Execute apos CRUD. Duas inscricoes esgotam a capacidade. Rejeicoes nao podem alterar o contador eventos_inscricoes_total.",
       "item": [
         {
           "name": "Contador antes das inscricoes",
@@ -234,7 +234,7 @@
     },
     {
       "name": "06-09 Externo UP e DOWN",
-      "description": "Execute esta pasta duas vezes ANTES da limpeza: (1) mock normal e externoModo=UP; (2) reinicie apenas o mock com MOCK_FALHAR=true e externoModo=DOWN. A API fica no ar. Alternativamente pare o mock e execute apenas a consulta via API DOWN. Na integracao com a branch Romulo o fallback responde 200 com o cep e valores genericos (cidade diferente do endereco real).",
+      "description": "Execute esta pasta duas vezes ANTES da limpeza: (1) mock normal e externoModo=UP; (2) reinicie apenas o mock com MOCK_FALHAR=true e externoModo=DOWN. A API fica no ar. Alternativamente pare o mock e execute apenas a consulta via API DOWN. O fallback responde 200 com o cep e valores genericos (cidade diferente do endereco real).",
       "item": [
         {
           "name": "Mock direto - 200 UP ou 503 DOWN",
@@ -260,7 +260,7 @@
     },
     {
       "name": "07 Profiles dev e prod",
-      "description": "Pre-condicao manual: API dev em devUrl e jar prod em prodUrl (porta 8082). A consulta health comprova acessibilidade, NAO comprova qual profile esta ativo. Para evidencia de profile confira o log de startup e teste persistencia apos reiniciar prod; veja docs/evidencias.md. A propriedade propria e seu efeito dependem de Romulo.",
+      "description": "Pre-condicao manual: API dev em devUrl e jar prod em prodUrl (porta 8082). A consulta health comprova acessibilidade; para evidencia de profile confira o log de startup e teste persistencia apos reiniciar prod; veja docs/evidencias.md.",
       "item": [
         {
           "name": "Instancia dev acessivel",
@@ -280,7 +280,7 @@
     },
     {
       "name": "08 Health UP e DOWN",
-      "description": "Liveness agregado nao prova um check proprio. Readiness H2 existe pela extensao; check de manutencao depende de Romulo. Apos integracao, execute com EVENTOS_MANUTENCAO=true e readinessEsperada=DOWN (503), depois restaure false/UP. Nao ha endpoint para mudar configuracoes.",
+      "description": "Demonstra Liveness (/q/health/live) e Readiness (/q/health/ready) controlando prontidao pelos endpoints /ready/up e /ready/down.",
       "item": [
         {
           "name": "Liveness - 200 UP",
@@ -290,10 +290,38 @@
           ] } }]
         },
         {
-          "name": "Readiness - 200 UP ou 503 DOWN",
+          "name": "Ativar Readiness (UP)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/ready/up" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Readiness marcada como UP', function () { pm.response.to.have.status(200); pm.collectionVariables.set('readinessEsperada', 'UP'); });"
+          ] } }]
+        },
+        {
+          "name": "Readiness - 200 UP",
           "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" },
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Readiness no estado esperado', function () { const estado = pm.collectionVariables.get('readinessEsperada'); pm.response.to.have.status(estado === 'UP' ? 200 : 503); pm.expect(pm.response.json().status).to.eql(estado); });"
+            "pm.test('Readiness UP', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('UP'); });"
+          ] } }]
+        },
+        {
+          "name": "Desativar Readiness (DOWN)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/ready/down" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Readiness marcada como DOWN', function () { pm.response.to.have.status(200); pm.collectionVariables.set('readinessEsperada', 'DOWN'); });"
+          ] } }]
+        },
+        {
+          "name": "Readiness - 503 DOWN",
+          "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Readiness DOWN (503)', function () { pm.response.to.have.status(503); pm.expect(pm.response.json().status).to.eql('DOWN'); });"
+          ] } }]
+        },
+        {
+          "name": "Restaurar Readiness (UP)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/ready/up" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Readiness restaurada para UP', function () { pm.response.to.have.status(200); pm.collectionVariables.set('readinessEsperada', 'UP'); });"
           ] } }]
         }
       ]
