@@ -120,13 +120,16 @@
         {
             "name": "06 Serviço externo (mock)",
             "item": [
-                { "name": "Mock: endereço por CEP", "request": { "method": "GET", "url": "{{mockUrl}}/enderecos/01310100" } }
+                { "name": "Mock: endereço por CEP", "request": { "method": "GET", "url": "{{mockUrl}}/enderecos/01310100" } },
+                { "name": "Endereço do evento", "request": { "method": "GET", "url": "{{baseUrl}}/eventos/{{eventoId}}/endereco" } }
             ]
         },
         {
             "name": "08 Health",
             "item": [
                 { "name": "Liveness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/live" } },
+                { "name": "UP", "request": { "method": "GET", "url": "{{baseUrl}}/ready/up" } },
+                { "name": "DOWN", "request": { "method": "GET", "url": "{{baseUrl}}/ready/down" } },
                 { "name": "Readiness", "request": { "method": "GET", "url": "{{baseUrl}}/q/health/ready" } }
             ]
         },

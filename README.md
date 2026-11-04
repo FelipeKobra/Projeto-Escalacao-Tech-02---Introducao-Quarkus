@@ -105,11 +105,11 @@ MOCK_FALHAR=true ./mvnw -f mock-enderecos/pom.xml quarkus:dev
 
 ## Configurações e profiles
 
-<!-- TODO (Romulo): listar as chaves próprias (@ConfigProperty), valores por profile e as variáveis de ambiente. -->
-
 | Chave | dev | prod | Variável de ambiente |
 |-------|-----|------|----------------------|
 | `quarkus.datasource.jdbc.url` | `jdbc:h2:mem:eventos` | `jdbc:h2:file:./data/eventos` | `QUARKUS_DATASOURCE_JDBC_URL` |
+| `quarkus.rest-client.enderecos-api.url` | `http://localhost:8081` | `http://localhost:8081` | `QUARKUS_REST_CLIENT_ENDERECOS_API_URL` |
+| `eventos.app` | `API Eventos - DEV` | `API Eventos - PRD` | `EVENTOS_APP` |
 
 ## Evidências dos requisitos
 
