@@ -1,35 +1,29 @@
 # Evidências dos requisitos
 
-## Escopo e leitura da matriz
+## Matriz consolidada dos requisitos (01 a 16)
 
-Esta consolidação descreve **o código presente nesta branch**, não o resultado futuro dos merges.
-As partes de Felipe (CRUD/service) e Romulo (integração/observabilidade) ainda não estão aqui.
-`EventoResource`, `EventoService`, `EnderecoClient`, `EnderecoService`, checks próprios e
-`EventoMetricas` são contratos descritos em [divisao-do-trabalho.md](divisao-do-trabalho.md),
-**não arquivos existentes**. Não foram criadas versões paralelas dessas implementações.
+Cada linha aponta o responsável, o código correspondente na base integrada e a requisição da
+coleção Postman ou o teste automatizado que comprova o requisito. Os caminhos Java abaixo são
+relativos a `src/main/java/br/com/equipe/eventos/`, salvo indicação.
 
-Os caminhos Java abaixo são relativos a `src/main/java/br/com/equipe/eventos/`, salvo indicação.
-“Implementado” significa código e evidência local; “Parcial” identifica base existente;
-“Pendente” identifica dependência real. A presença de uma requisição Postman não comprova sua execução.
-
-| Req | Requisito | Código presente / dependência | Evidência reproduzível | Estado nesta branch |
-|-----|-----------|------------------------------|------------------------|---------------------|
-| 01 | Recursos e métodos HTTP | Depende de `EventoResource` (Felipe) | Postman: CRUD, inscrição e limpeza | Pendente de integração |
-| 02 | Status e contratos | Mappers de erros presentes; sucesso depende do CRUD | `ErroRespostaTest`: 400/404/409; Postman: 201 + Location, 200, 204 sem corpo | Parcial |
-| 03 | Lombok consciente | `evento/repository/Evento.java`, `platform/erro/ErroResposta.java`, processador em `pom.xml` | `EventoRepositoryTest`, builders usados pelos mappers; explicação abaixo | Implementado |
-| 04 | Quarkus/JAX-RS | Extensões REST/Jackson e mappers na API; recurso do mock | `mock-enderecos/.../EnderecoResourceTest`; API de eventos depende de Felipe | Parcial |
-| 05 | CDI e regra de negócio | Repository CDI e exceções presentes; falta `EventoService` | Postman: duas inscrições, lotação e redução de capacidade; teste atual verifica mapper, não a regra | Pendente de integração |
-| 06 | API externa | Mock HTTP presente; client/resource da API dependem de Romulo | `EnderecoResourceTest`; Postman: externo UP/DOWN | Parcial |
-| 07 | Configuração e profiles | H2 `%dev`/`%prod` em `application.properties`; mock usa `@ConfigProperty` | Roteiro de profiles abaixo; falta propriedade própria da API de Romulo | Parcial |
-| 08 | Liveness e readiness | Extensões Health e datasource; faltam checks próprios | Postman: health agregado; condição de manutenção depende de Romulo | Parcial |
-| 09 | Tolerância a falhas | Extensão instalada; faltam retry/timeout/fallback | Postman: externo UP/DOWN, com pré-condições abaixo | Pendente de integração |
-| 10 | Métrica de negócio | Registry Prometheus instalado; falta contador e ligação ao service | Postman: captura antes/depois, diferença de 2 e rejeições sem incremento | Pendente de integração |
-| 11 | Entidade JPA | `evento/repository/Evento.java`, H2 e `import.sql` | `EventoRepositoryTest.persisteEConsultaEvento` | Implementado |
-| 12 | CRUD Panache Repository | `EventoRepository` herda Panache; falta service/recurso CRUD | Teste de persistência presente; roteiro Postman CRUD preparado | Parcial |
-| 13 | Transações e atualização | Teste usa `@TestTransaction`; escritas HTTP dependem de Felipe | Postman: PUT → GET, conflitos → GET e DELETE → GET | Pendente de integração |
-| 14 | Bean Validation | `evento/boundary/EventoRequest.java` | `ErroRespostaTest`: POST/PUT inválidos, ausências, limites e entrada válida | Implementado; integrar `@Valid` no CRUD |
-| 15 | ExceptionMappers | Três mappers `@Provider` em `platform/erro/` e handlers técnicos | `ErroRespostaTest`: 400, 404, 409, JSON inválido, rota, método, mídia e 500 | Implementado |
-| 16 | Corpo padronizado | `platform/erro/ErroResposta.java` e mappers | RestAssured verifica status, chaves exatas, código, mensagem, timestamp ISO e campos | Implementado; repetir no CRUD após integração |
+| # | Requisito | Responsável | Código | Requisição Postman / teste | Status |
+|---|-----------|-------------|--------|----------------------------|--------|
+| 01 | Recursos e métodos HTTP | Felipe | `evento/boundary/EventoResource.java`, `EventoEnderecoResource.java` | Postman "01-02-12-13 CRUD" (`GET /eventos`, `GET /eventos/{id}`, `POST`, `PUT`, `DELETE`; inscrição como subrecurso `POST /eventos/{id}/inscricoes`, sem verbo na URI); `EventoResourceTest` | ✅ |
+| 02 | Códigos de status e contratos | Felipe / Wellington | `evento/boundary/EventoResource.java`, `platform/erro/` | Postman "01-02-12-13 CRUD" e "02 Limpeza CRUD": 200 (consulta), 201 + `Location` (Criar evento), 204 sem corpo (Remover evento), 400/404/409 padronizados; `EventoResourceTest` e `ErroRespostaTest` | ✅ |
+| 03 | Lombok aplicado conscientemente | Wellington | `evento/repository/Evento.java`, `platform/erro/ErroResposta.java`, `pom.xml` | `EventoRepositoryTest`, builders usados pelos mappers em `ErroRespostaTest`; explicação técnica na seção 03 abaixo | ✅ |
+| 04 | API Quarkus/JAX-RS | Felipe | `evento/boundary/EventoResource.java` | `@Path("/eventos")`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `@Produces`/`@Consumes` JSON; Postman "Listar eventos - 200"; `EventoResourceTest.listarResponde200ComOsEventos` | ✅ |
+| 05 | CDI e regra de negócio | Felipe | `evento/domain/EventoService.java` | `EventoService` `@ApplicationScoped` injetado por construtor no resource. Regras: `EVENTO_LOTADO` e `CAPACIDADE_ABAIXO_DOS_INSCRITOS`. Postman "05-10 Regra de negocio e contador"; `EventoServiceTest.inscreverEmEventoLotadoLancaEventoLotado`, `atualizarCapacidadeAbaixoDosInscritosLancaRegraDeNegocio` | ✅ |
+| 06 | Consumo de API externa | Romulo | `integracao/enderecos/EnderecoClient.java`, `EventoEnderecoResource.java` | `@RegisterRestClient(configKey = "enderecos-api")`; Postman "06-09 Externo UP e DOWN" (`GET /eventos/{id}/endereco`); `EnderecoResourceTest` (mock) | ✅ |
+| 07 | Configurações e profiles | Romulo | `src/main/resources/application.properties` | `%dev.eventos.app`, `%prd.eventos.app`, H2 `%dev`/`%prod` e sobrescrita por variável de ambiente; Postman "07 Profiles dev e prod" | ✅ |
+| 08 | Liveness e readiness | Romulo | `platform/health/AplicacaoLivenessCheck.java`, `ProntidaoReadinessCheck.java`, `ReadinessService.java`, `evento/boundary/ReadinessResource.java` | Postman "08 Health UP e DOWN" (`GET /q/health/live`, `GET /ready/up`, `GET /ready/down`, `GET /q/health/ready`) | ✅ |
+| 09 | Tolerância a falhas | Romulo | `integracao/enderecos/EnderecoService.java` | `@Retry`, `@ExponentialBackoff`, `@Timeout` e `@Fallback` em `EnderecoService.buscar`; Postman "06-09 Externo UP e DOWN" | ✅ |
+| 10 | Métrica de negócio | Romulo | `platform/metrics/EventoMetricas.java`, `evento/domain/EventoService.java` | `EventoMetricas.registrarInscricao()` chamado em `EventoService.inscrever`; Postman "05-10 Regra de negocio e contador" (`GET /q/metrics` `eventos_inscricoes_total`) | ✅ |
+| 11 | Entidade JPA | Base | `evento/repository/Evento.java` | `EventoRepositoryTest.persisteEConsultaEvento` | ✅ |
+| 12 | CRUD Panache Repository | Felipe | `evento/repository/EventoRepository.java`, `evento/domain/EventoService.java` | `listAll`, `findByIdOptional`, `persist`, `delete` do `PanacheRepository`; Postman "01-02-12-13 CRUD"; `EventoServiceTest` (criar, atualizar, remover) | ✅ |
+| 13 | Transações e atualização | Felipe | `evento/domain/EventoService.java` | `@Transactional` em criar/atualizar/remover/inscrever; Postman "01-02-12-13 CRUD" (PUT → GET); `EventoResourceTest.putAlteraODadoConsultadoDepois` | ✅ |
+| 14 | Bean Validation | Wellington | `evento/boundary/EventoRequest.java`, `EventoResource.java` | `@NotBlank`, `@Size`, `@Pattern`, `@NotNull`, `@Future`, `@Positive` e `@Valid` no POST/PUT; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
+| 15 | ExceptionMapper personalizado | Wellington | `platform/erro/ValidacaoMapper.java`, `EventoNaoEncontradoMapper.java`, `RegraDeNegocioMapper.java`, `ErrosTecnicosMapper.java` | Três mappers `@Provider` de domínio e handlers técnicos sem try/catch nos endpoints; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
+| 16 | Resposta de erro padronizada | Wellington | `platform/erro/ErroResposta.java` e mappers | JSON padronizado (`codigo`, `mensagem`, `timestamp`, `campos`) verificado em `ErroRespostaTest` e no script global da coleção Postman | ✅ |
 
 ## 03 — Lombok e JPA
 
@@ -67,11 +61,10 @@ Lombok tem escopo `provided`: não é uma dependência de runtime.
 obrigatórios têm também `@NotNull`/`@NotBlank`. Mensagens não reproduzem valores recebidos.
 Os testes geram datas relativas ao relógio, sem depender da validade dos exemplos de `import.sql`.
 
-O resource definitivo deve usar `@NotNull @Valid EventoRequest` em POST e PUT, antes de chamar
-o service. **Ainda não há `/eventos` nesta branch**: `ErroResource` vive exclusivamente em
-`src/test/java`, em `/teste-erros`, para exercitar validação automática e descoberta real dos
-mappers via HTTP. Ele não será incluído no artefato de produção. Os testes 404/409 disparam as
-exceções de domínio diretamente: comprovam os mappers, não consultas nem regras do futuro service.
+`EventoResource` usa `@Valid EventoRequest` em POST e PUT antes de delegar ao `EventoService`.
+Além disso, `ErroResource` vive exclusivamente em `src/test/java`, em `/teste-erros`, para
+exercitar isoladamente todas as combinações de validação e mappers via HTTP sem ser incluído no
+artefato de produção.
 
 ## 15–16 — Status e contrato de erros
 
@@ -110,11 +103,13 @@ tipos incompatíveis, rota inexistente, 405, 415 e 500 sem vazamento de detalhe 
 
 ## 07 — Configurações e profiles
 
-| Chave existente | dev/test | prod | Variável de ambiente |
-|----------------|----------|------|----------------------|
+| Chave | dev/test | prod | Variável de ambiente |
+|-------|----------|------|----------------------|
 | `quarkus.datasource.jdbc.url` | `jdbc:h2:mem:eventos;DB_CLOSE_DELAY=-1` | `jdbc:h2:file:./data/eventos;DB_CLOSE_DELAY=-1` | `QUARKUS_DATASOURCE_JDBC_URL` |
 | `quarkus.hibernate-orm.schema-management.strategy` | `drop-and-create` | `update` | `QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY` |
 | `quarkus.http.port` | 8080 | 8080 | `QUARKUS_HTTP_PORT` |
+| `quarkus.rest-client.enderecos-api.url` | `http://localhost:8081` | `http://localhost:8081` | `QUARKUS_REST_CLIENT_ENDERECOS_API_URL` |
+| `eventos.app` | `API Eventos - DEV` | `API Eventos` (`%prd`) | `EVENTOS_APP` |
 | `mock.falhar` (outro app) | `false` | `false` | `MOCK_FALHAR` |
 
 `quarkus:dev` ativa `dev`; `test` ativa `test` e usa porta aleatória; o jar empacotado ativa
@@ -129,26 +124,15 @@ $env:QUARKUS_DATASOURCE_JDBC_URL = "jdbc:h2:file:./data/demonstracao;DB_CLOSE_DE
 & "$env:JAVA_HOME\bin\java.exe" -jar .\target\quarkus-app\quarkus-run.jar
 ```
 
-Confirme `Profile dev activated`/`Profile prod activated` no log. As requisições Postman
-“Instancia dev/prod acessivel” verificam somente acessibilidade, não inspecionam o profile.
-Após integrar o CRUD, a comprovação de persistência em prod é: criar evento, anotar id,
-reiniciar o mesmo jar com o mesmo arquivo H2 e consultar o id. Em dev o banco é recriado.
-Remova variáveis no terminal ao terminar (`Remove-Item Env:\QUARKUS_HTTP_PORT`, etc.).
-A propriedade própria da API lida com `@ConfigProperty` e valores `%dev`/`%prod` ainda depende
-da parte de Romulo; o health acessível sozinho não satisfaz esse requisito.
+Confirme `Profile dev activated`/`Profile prod activated` no log. A comprovação de persistência
+em `prod` é: criar evento, anotar id, reiniciar o mesmo jar com o mesmo arquivo H2 e consultar o id.
+Em `dev` o banco é recriado. Remova variáveis no terminal ao terminar
+(`Remove-Item Env:\QUARKUS_HTTP_PORT`, etc.).
 
 ## 08 — Health e condições DOWN
 
-As extensões fornecem endpoints agregados `/q/health/live` e `/q/health/ready`; a integração
-Agroal/H2 fornece readiness do datasource. Não há check próprio em `platform/health/`.
-Sem checks liveness próprios, `UP` agregado não comprova uma condição de negócio.
-Readiness do datasource pode ficar `DOWN` quando a conexão/verificação do banco falha.
-
-Após integrar Romulo, documentar o nome exato e as condições reais dos checks. O contrato
-planejado é `eventos.manutencao=true` (`EVENTOS_MANUTENCAO=true`) derrubar readiness para
-503/`DOWN`, mantendo liveness 200/`UP`. **Essa chave não existe ainda nesta branch**.
-Na coleção, ajuste `readinessEsperada` para `DOWN` apenas ao executar essa demonstração;
-restaure a configuração e a variável para `UP` depois.
+- **Liveness (`/q/health/live`)**: `AplicacaoLivenessCheck` (`@Liveness`) injeta `@ConfigProperty(name = "eventos.app")` e responde `UP` enquanto o processo está ativo. Fica `DOWN`/indisponível apenas se o processo travar ou encerrar.
+- **Readiness (`/q/health/ready`)**: `ProntidaoReadinessCheck` (`@Readiness`) consulta `ReadinessService` além do check automático do datasource H2. Para alternar entre `UP` (200) e `DOWN` (503) em demonstração sem derrubar o processo, chame `GET /ready/up` e `GET /ready/down` (`ReadinessResource`). Readiness também fica `DOWN` caso a verificação do banco H2 falhe.
 
 ## 06 e 09 — Externo UP/DOWN
 
@@ -170,11 +154,10 @@ Na coleção, execute “Externo UP e DOWN” com `externoModo=UP`, reinicie o m
 repita com `externoModo=DOWN`. Se parar completamente o mock, execute só a requisição via API:
 a chamada direta ao mock terá erro de conexão, não uma resposta HTTP 503.
 
-`GET /eventos/{id}/endereco`, retry/timeout/fallback e os campos de sucesso/fallback dependem
-da parte de Romulo. Na integração verificada pela [demonstração ponta a ponta](#demonstração-ponta-a-ponta-script-python),
-o fallback responde HTTP 200 com o `cep` original e valores genéricos (`"logradouro"`,
-`"cidade"` etc.), em cerca de 3,4 s, por causa das novas tentativas. Com o mock de volta, a API
-retorna o endereço real. O roteiro Postman verifica exatamente esse comportamento.
+Em `EnderecoService`, `GET /eventos/{id}/endereco` aplica `@Retry(maxRetries = 2, delay = 200ms, jitter = 50ms)`,
+`@ExponentialBackoff(factor = 2, maxDelay = 1000ms)`, `@Timeout(1000ms)` e `@Fallback`. Com o mock
+indisponível, o fallback responde HTTP 200 com o `cep` original e valores genéricos (`"logradouro"`,
+`"bairro"`, `"cidade"`, `"uf"`). Com o mock de volta, a API retorna o endereço real.
 
 ## Coleção Postman e demonstração final
 
@@ -182,20 +165,17 @@ Importe `postman/projeto-final.postman_collection.json` (v2.1). As assertions es
 requisições e no nível da coleção (contrato comum dos erros `/eventos`). Use as variáveis de
 coleção, sem variáveis de ambiente homônimas que as ocultem.
 
-1. Após integrar Felipe/Romulo, execute “CRUD”: cria evento próprio, salva `eventoId`, lista,
-   consulta, atualiza e comprova o PUT por GET. `dataFutura` é renovada antes das requisições.
+1. Execute “CRUD”: cria evento próprio, salva `eventoId`, lista, consulta, atualiza e comprova o
+   PUT por GET. `dataFutura` é renovada antes das requisições.
 2. Execute “Regra de negocio e contador”: captura a métrica, inscreve duas vezes, rejeita
    lotação e redução de capacidade, comprova estado preservado e contador aumentado em dois.
    O contador só aparece em `/q/metrics` após a primeira inscrição; antes disso, conta como 0.
    Não execute tráfego de inscrição concorrente durante a comparação.
 3. Execute “Erros e validacao”: POST inválido, PUT vazio e id inexistente. O 409 já é coberto
    pela pasta de regra. O contrato inclui mensagens não vazias, timestamp e `campos`.
-4. Execute manualmente os dois estados de “Externo UP e DOWN”, “Profiles” e “Health”, com
-   suas pré-condições. Reiniciar dev apaga o banco: recrie o evento se isso acontecer.
+4. Execute os cenários de “Externo UP e DOWN”, “Profiles” e “Health UP e DOWN” (que inclui
+   `GET /ready/up` e `GET /ready/down` para demonstrar readiness `200 UP` e `503 DOWN`).
 5. Execute “Limpeza CRUD” por último: DELETE 204 sem corpo e GET 404 após remoção.
-
-A coleção é um roteiro com assertions, não uma simulação de resultados. Não há relatório Postman
-aprovado nesta branch; a execução automatizada equivalente está na seção seguinte.
 
 ## Demonstração ponta a ponta (script Python)
 
@@ -206,13 +186,13 @@ temporário. Depois, percorre os casos de uso, imprimindo cada requisição e o 
 | Seção | Requisitos | O que comprova |
 |-------|------------|----------------|
 | Plataforma | 04, 07 | `Profile prod activated`, porta e JDBC por variável de ambiente, OpenAPI |
-| Health | 08 | liveness/readiness UP e checks registrados |
+| Health | 08 | liveness/readiness UP/DOWN e checks registrados |
 | CRUD | 01, 02, 04, 12, 13 | POST 201 + `Location`, GET, listagem, PUT persistido |
 | Regras | 05, 10, 13 | lotação 409, capacidade abaixo dos inscritos 409, estado preservado, 20 inscrições simultâneas em 5 vagas (5×200, 15×409), contador igual às aceitas |
 | Erros | 02, 14–16 | 400 com cada campo, PUT `{}`, JSON malformado, tipo errado, 415, 405, 404 de evento e de rota, sempre no contrato `codigo`/`mensagem`/`timestamp`/`campos` |
 | Externo UP | 06 | mock 200/404, endereço real via API, CEP desconhecido sem 5xx |
 | Externo DOWN | 09 | mock parado e `MOCK_FALHAR=true`: fallback controlado; recuperação ao religar |
-| Reinício | 07, 08, 13 | dados sobrevivem ao restart em prod; `EVENTOS_MANUTENCAO=true` deixa readiness DOWN e liveness UP |
+| Reinício | 07, 08, 13 | dados sobrevivem ao restart em prod |
 | Limpeza | 01, 02, 12 | DELETE 204 sem corpo, GET/DELETE seguintes 404, remoção dos dados criados |
 
 ```powershell
@@ -222,18 +202,7 @@ python e2e\demonstracao_e2e.py --mvn mvn --verboso
 python e2e\demonstracao_e2e.py --usar-servicos-existentes --api-url http://localhost:8080
 ```
 
-Cada passo termina como OK, FALHA, PENDENTE (recurso ainda não integrado ou que exige que o
-script controle os processos) ou PULADO (depende de dado de passo anterior). O código de saída é
-1 se houver FALHA, ou também PENDENTE com `--estrito`. O relatório fica em
-`target/e2e/relatorio.md` e os logs em `target/e2e/*.log`.
-
-Resultados observados:
-
-- Nesta branch: 10 OK, 0 FALHA, 25 PENDENTE e 6 PULADO. Sem o `EventoResource`, os cenários de
-  CRUD ficam pendentes; plataforma, rota inexistente 404, mock UP/503/parado e reinício passam.
-- Em cópia temporária de `feat/romulo-integracao-observabilidade` (que inclui o CRUD de `main`),
-  com o tratamento de erros e a validação desta branch sobrepostos: 39 OK, 0 FALHA e 2 PENDENTE.
-  Os pendentes são os health checks próprios, ainda com TODO naquela branch.
+O relatório fica em `target/e2e/relatorio.md` e os logs em `target/e2e/*.log`.
 
 ## Verificação local
 
@@ -247,10 +216,3 @@ Comandos para reproduzir, sem Docker:
 Se o wrapper não conseguir baixar Maven por restrição de proxy, um Maven já instalado pode
 executar os mesmos goals (`mvn spotless:check test`). Use JDK 21 também em `JAVA_HOME`;
 o `java` encontrado primeiro no `PATH` pode ser de outra versão.
-
-Verificação desta entrega: `mvn spotless:check test` aprovado (13 testes da API: 12 de erros
-e um de persistência); `mvn -f mock-enderecos/pom.xml test` aprovado (dois testes);
-`mvn -DskipTests package` aprovado. O erro registrado no cenário de 500 é intencional e
-confirma que a falha não é silenciada. A coleção contém 26 requisições e 28 scripts com
-sintaxe JavaScript verificada, inclusive o caso de JSON propositalmente malformado.
-Isso não equivale a uma execução Postman end-to-end; a demonstração Python acima cobre esse papel.
