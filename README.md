@@ -15,7 +15,9 @@ de verificação de cada requisito.
 |------------|-------|
 | Felipe | CRUD, regra de inscrição e transações |
 | Romulo | Integração externa, resiliência, profiles, health e métricas |
-| Wellington | Validação, tratamento de erros, Lombok, Postman e evidências |
+| Gean | Validação, tratamento de erros, Lombok, Postman e evidências |
+
+Roteiro da apresentação com comandos `curl.exe`: [docs/apresentacao.md](docs/apresentacao.md).
 
 Contratos entre as partes: [docs/divisao-do-trabalho.md](docs/divisao-do-trabalho.md).
 
@@ -82,7 +84,8 @@ e `Remove-Item Env:\QUARKUS_DATASOURCE_JDBC_URL` para não afetar outra execuç�
 | `quarkus.hibernate-orm.schema-management.strategy` | `drop-and-create` | `update` | `QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY` |
 | `quarkus.http.port` | 8080 (testes: aleatória) | 8080 | `QUARKUS_HTTP_PORT` |
 | `quarkus.rest-client.enderecos-api.url` | `http://localhost:8081` | `http://localhost:8081` | `QUARKUS_REST_CLIENT_ENDERECOS_API_URL` |
-| `eventos.app` | `API Eventos - DEV` | `API Eventos` (`%prd`) | `EVENTOS_APP` |
+| `eventos.app` | `API Eventos - DEV` (`%dev`) | `API Eventos` (valor base) | `EVENTOS_APP` |
+| `eventos.manutencao` | `false` | `false` (`true` = readiness DOWN) | `EVENTOS_MANUTENCAO` |
 | `mock.falhar` (mock separado) | `false` | `false` | `MOCK_FALHAR` |
 
 ### Simular indisponibilidade externa
@@ -141,7 +144,8 @@ retornam 500 sem expor detalhes internos e são registrados no servidor.
 
 - `/q/health/live` expõe `AplicacaoLivenessCheck` (nome configurado por `eventos.app`).
 - `/q/health/ready` expõe `ProntidaoReadinessCheck` além do check do datasource H2; os endpoints
-  auxiliares `GET /ready/up` e `GET /ready/down` controlam o estado de prontidão em tempo de execução.
+  auxiliares `GET /ready/up` e `GET /ready/down` controlam o estado de prontidão em tempo de execução;
+  ela começa `UP`, ou `DOWN` se a API subir com `EVENTOS_MANUTENCAO=true`.
 - `/q/metrics` expõe o contador `eventos_inscricoes_total` (`EventoMetricas`), incrementado a cada
   inscrição concluída com sucesso em `EventoService.inscrever`.
 

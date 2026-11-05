@@ -32,13 +32,13 @@ um PR em rascunho com o checklist abaixo.
   - inscrição em evento lotado lança `RegraDeNegocioException("EVENTO_LOTADO", ...)`;
   - `PUT` não pode deixar a capacidade abaixo do número de inscritos
     (`RegraDeNegocioException("CAPACIDADE_ABAIXO_DOS_INSCRITOS", ...)`).
-- [ ] Id inexistente lança `EventoNaoEncontradoException` (o Wellington mapeia para 404).
+- [ ] Id inexistente lança `EventoNaoEncontradoException` (o Gean mapeia para 404).
 - [ ] `EventoResource` (`evento/boundary/`) com `@Path("/eventos")` e `@Produces`/`@Consumes` JSON (Req 04):
   - `GET /eventos` → 200, `GET /eventos/{id}` → 200;
   - `POST /eventos` → **201 + header `Location`**;
   - `PUT /eventos/{id}` → 200, `DELETE /eventos/{id}` → **204**;
   - `POST /eventos/{id}/inscricoes` → 200 com o evento atualizado (sem verbo na URI, Req 01).
-- [ ] `@Valid` no parâmetro `EventoRequest` do `POST` e do `PUT` (as restrições em si são do Wellington).
+- [ ] `@Valid` no parâmetro `EventoRequest` do `POST` e do `PUT` (as restrições em si são do Gean).
 - [ ] Testes `@QuarkusTest` com RestAssured: CRUD completo, sequência PUT → GET mostrando o dado
       alterado (Req 13) e inscrição recusada em evento lotado.
 
@@ -66,7 +66,7 @@ um PR em rascunho com o checklist abaixo.
       `EventoService` e chamar `registrarInscricao()` no fim da inscrição (Req 10).
 - [ ] Testes: fallback com o serviço externo fora do ar e a métrica variando em `/q/metrics`.
 
-## Wellington — Validação, erros, Lombok e entregáveis
+## Gean — Validação, erros, Lombok e entregáveis
 
 **Branch:** `feat/wellington-validacao-erros-docs` · **Requisitos:** 03, 14, 15, 16 + README, Postman e evidências
 
@@ -90,7 +90,7 @@ um PR em rascunho com o checklist abaixo.
 
 | De → Para | Contrato |
 |-----------|----------|
-| Felipe → Wellington | O service lança `EventoNaoEncontradoException` e `RegraDeNegocioException(codigo, mensagem)` (já na base); o resource usa `@Valid`. |
+| Felipe → Gean | O service lança `EventoNaoEncontradoException` e `RegraDeNegocioException(codigo, mensagem)` (já na base); o resource usa `@Valid`. |
 | Felipe → Romulo | `EventoService.buscar(id)` (usado no `GET /eventos/{id}/endereco`) e `EventoService.inscrever(id)` (onde o Romulo pluga a métrica). Até o merge do Felipe, o Romulo trabalha no client, na resiliência, no health e na config, que não dependem disso. |
 
 Se um contrato precisar mudar, avise no grupo e comente no PR do colega antes.
@@ -111,7 +111,7 @@ git push
 - Commits em [Conventional Commits](https://www.conventionalcommits.org/pt-br/v1.0.0/):
   `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 - Ao terminar, marque o PR como "Ready for review" e peça revisão de pelo menos um colega.
-- **Ordem de merge sugerida:** Felipe → Romulo → Wellington. Quem vier depois atualiza a branch com
+- **Ordem de merge sugerida:** Felipe → Romulo → Gean. Quem vier depois atualiza a branch com
   `git fetch origin && git merge origin/main`, resolve os conflitos e roda `./mvnw test` de novo.
 - Ninguém commita direto na `main`.
 

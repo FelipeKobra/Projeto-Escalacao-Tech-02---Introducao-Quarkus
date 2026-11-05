@@ -9,21 +9,21 @@ relativos a `src/main/java/br/com/equipe/eventos/`, salvo indicação.
 | # | Requisito | Responsável | Código | Requisição Postman / teste | Status |
 |---|-----------|-------------|--------|----------------------------|--------|
 | 01 | Recursos e métodos HTTP | Felipe | `evento/boundary/EventoResource.java`, `EventoEnderecoResource.java` | Postman "01-02-12-13 CRUD" (`GET /eventos`, `GET /eventos/{id}`, `POST`, `PUT`, `DELETE`; inscrição como subrecurso `POST /eventos/{id}/inscricoes`, sem verbo na URI); `EventoResourceTest` | ✅ |
-| 02 | Códigos de status e contratos | Felipe / Wellington | `evento/boundary/EventoResource.java`, `platform/erro/` | Postman "01-02-12-13 CRUD" e "02 Limpeza CRUD": 200 (consulta), 201 + `Location` (Criar evento), 204 sem corpo (Remover evento), 400/404/409 padronizados; `EventoResourceTest` e `ErroRespostaTest` | ✅ |
-| 03 | Lombok aplicado conscientemente | Wellington | `evento/repository/Evento.java`, `platform/erro/ErroResposta.java`, `pom.xml` | `EventoRepositoryTest`, builders usados pelos mappers em `ErroRespostaTest`; explicação técnica na seção 03 abaixo | ✅ |
+| 02 | Códigos de status e contratos | Felipe / Gean | `evento/boundary/EventoResource.java`, `platform/erro/` | Postman "01-02-12-13 CRUD" e "02 Limpeza CRUD": 200 (consulta), 201 + `Location` (Criar evento), 204 sem corpo (Remover evento), 400/404/409 padronizados; `EventoResourceTest` e `ErroRespostaTest` | ✅ |
+| 03 | Lombok aplicado conscientemente | Gean | `evento/repository/Evento.java`, `platform/erro/ErroResposta.java`, `pom.xml` | `EventoRepositoryTest`, builders usados pelos mappers em `ErroRespostaTest`; explicação técnica na seção 03 abaixo | ✅ |
 | 04 | API Quarkus/JAX-RS | Felipe | `evento/boundary/EventoResource.java` | `@Path("/eventos")`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `@Produces`/`@Consumes` JSON; Postman "Listar eventos - 200"; `EventoResourceTest.listarResponde200ComOsEventos` | ✅ |
 | 05 | CDI e regra de negócio | Felipe | `evento/domain/EventoService.java` | `EventoService` `@ApplicationScoped` injetado por construtor no resource. Regras: `EVENTO_LOTADO` e `CAPACIDADE_ABAIXO_DOS_INSCRITOS`. Postman "05-10 Regra de negocio e contador"; `EventoServiceTest.inscreverEmEventoLotadoLancaEventoLotado`, `atualizarCapacidadeAbaixoDosInscritosLancaRegraDeNegocio` | ✅ |
 | 06 | Consumo de API externa | Romulo | `integracao/enderecos/EnderecoClient.java`, `EventoEnderecoResource.java` | `@RegisterRestClient(configKey = "enderecos-api")`; Postman "06-09 Externo UP e DOWN" (`GET /eventos/{id}/endereco`); `EnderecoResourceTest` (mock) | ✅ |
-| 07 | Configurações e profiles | Romulo | `src/main/resources/application.properties` | `%dev.eventos.app`, `%prd.eventos.app`, H2 `%dev`/`%prod` e sobrescrita por variável de ambiente; Postman "07 Profiles dev e prod" | ✅ |
+| 07 | Configurações e profiles | Romulo | `src/main/resources/application.properties` | `eventos.app` (base) e `%dev.eventos.app`, `eventos.manutencao`, H2 `%dev`/`%prod` e sobrescrita por variável de ambiente; Postman "07 Profiles dev e prod" | ✅ |
 | 08 | Liveness e readiness | Romulo | `platform/health/AplicacaoLivenessCheck.java`, `ProntidaoReadinessCheck.java`, `ReadinessService.java`, `evento/boundary/ReadinessResource.java` | Postman "08 Health UP e DOWN" (`GET /q/health/live`, `GET /ready/up`, `GET /ready/down`, `GET /q/health/ready`) | ✅ |
 | 09 | Tolerância a falhas | Romulo | `integracao/enderecos/EnderecoService.java` | `@Retry`, `@ExponentialBackoff`, `@Timeout` e `@Fallback` em `EnderecoService.buscar`; Postman "06-09 Externo UP e DOWN" | ✅ |
 | 10 | Métrica de negócio | Romulo | `platform/metrics/EventoMetricas.java`, `evento/domain/EventoService.java` | `EventoMetricas.registrarInscricao()` chamado em `EventoService.inscrever`; Postman "05-10 Regra de negocio e contador" (`GET /q/metrics` `eventos_inscricoes_total`) | ✅ |
 | 11 | Entidade JPA | Base | `evento/repository/Evento.java` | `EventoRepositoryTest.persisteEConsultaEvento` | ✅ |
 | 12 | CRUD Panache Repository | Felipe | `evento/repository/EventoRepository.java`, `evento/domain/EventoService.java` | `listAll`, `findByIdOptional`, `persist`, `delete` do `PanacheRepository`; Postman "01-02-12-13 CRUD"; `EventoServiceTest` (criar, atualizar, remover) | ✅ |
 | 13 | Transações e atualização | Felipe | `evento/domain/EventoService.java` | `@Transactional` em criar/atualizar/remover/inscrever; Postman "01-02-12-13 CRUD" (PUT → GET); `EventoResourceTest.putAlteraODadoConsultadoDepois` | ✅ |
-| 14 | Bean Validation | Wellington | `evento/boundary/EventoRequest.java`, `EventoResource.java` | `@NotBlank`, `@Size`, `@Pattern`, `@NotNull`, `@Future`, `@Positive` e `@Valid` no POST/PUT; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
-| 15 | ExceptionMapper personalizado | Wellington | `platform/erro/ValidacaoMapper.java`, `EventoNaoEncontradoMapper.java`, `RegraDeNegocioMapper.java`, `ErrosTecnicosMapper.java` | Três mappers `@Provider` de domínio e handlers técnicos sem try/catch nos endpoints; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
-| 16 | Resposta de erro padronizada | Wellington | `platform/erro/ErroResposta.java` e mappers | JSON padronizado (`codigo`, `mensagem`, `timestamp`, `campos`) verificado em `ErroRespostaTest` e no script global da coleção Postman | ✅ |
+| 14 | Bean Validation | Gean | `evento/boundary/EventoRequest.java`, `EventoResource.java` | `@NotBlank`, `@Size`, `@Pattern`, `@NotNull`, `@Future`, `@Positive` e `@Valid` no POST/PUT; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
+| 15 | ExceptionMapper personalizado | Gean | `platform/erro/ValidacaoMapper.java`, `EventoNaoEncontradoMapper.java`, `RegraDeNegocioMapper.java`, `ErrosTecnicosMapper.java` | Três mappers `@Provider` de domínio e handlers técnicos sem try/catch nos endpoints; Postman "14-15-16 Erros e validacao"; `ErroRespostaTest` | ✅ |
+| 16 | Resposta de erro padronizada | Gean | `platform/erro/ErroResposta.java` e mappers | JSON padronizado (`codigo`, `mensagem`, `timestamp`, `campos`) verificado em `ErroRespostaTest` e no script global da coleção Postman | ✅ |
 
 ## 03 — Lombok e JPA
 
@@ -109,7 +109,8 @@ tipos incompatíveis, rota inexistente, 405, 415 e 500 sem vazamento de detalhe 
 | `quarkus.hibernate-orm.schema-management.strategy` | `drop-and-create` | `update` | `QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY` |
 | `quarkus.http.port` | 8080 | 8080 | `QUARKUS_HTTP_PORT` |
 | `quarkus.rest-client.enderecos-api.url` | `http://localhost:8081` | `http://localhost:8081` | `QUARKUS_REST_CLIENT_ENDERECOS_API_URL` |
-| `eventos.app` | `API Eventos - DEV` | `API Eventos` (`%prd`) | `EVENTOS_APP` |
+| `eventos.app` | `API Eventos - DEV` (`%dev`) | `API Eventos` (valor base) | `EVENTOS_APP` |
+| `eventos.manutencao` | `false` | `false` (`true` = readiness DOWN) | `EVENTOS_MANUTENCAO` |
 | `mock.falhar` (outro app) | `false` | `false` | `MOCK_FALHAR` |
 
 `quarkus:dev` ativa `dev`; `test` ativa `test` e usa porta aleatória; o jar empacotado ativa
@@ -132,7 +133,7 @@ Em `dev` o banco é recriado. Remova variáveis no terminal ao terminar
 ## 08 — Health e condições DOWN
 
 - **Liveness (`/q/health/live`)**: `AplicacaoLivenessCheck` (`@Liveness`) injeta `@ConfigProperty(name = "eventos.app")` e responde `UP` enquanto o processo está ativo. Fica `DOWN`/indisponível apenas se o processo travar ou encerrar.
-- **Readiness (`/q/health/ready`)**: `ProntidaoReadinessCheck` (`@Readiness`) consulta `ReadinessService` além do check automático do datasource H2. Para alternar entre `UP` (200) e `DOWN` (503) em demonstração sem derrubar o processo, chame `GET /ready/up` e `GET /ready/down` (`ReadinessResource`). Readiness também fica `DOWN` caso a verificação do banco H2 falhe.
+- **Readiness (`/q/health/ready`)**: `ProntidaoReadinessCheck` (`@Readiness`) consulta `ReadinessService` além do check automático do datasource H2. Para alternar entre `UP` (200) e `DOWN` (503) em demonstração sem derrubar o processo, chame `GET /ready/up` e `GET /ready/down` (`ReadinessResource`). A readiness começa `UP`; com `EVENTOS_MANUTENCAO=true` ela já sobe `DOWN` (manutenção) enquanto a liveness segue `UP`. Readiness também fica `DOWN` caso a verificação do banco H2 falhe.
 
 ## 06 e 09 — Externo UP/DOWN
 
